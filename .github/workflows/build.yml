@@ -1,0 +1,45 @@
+name: Build Upic
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # 允许手动触发工作流
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.0'
+
+    - name: Install dependencies
+      run: |
+        brew install cocoapods
+        pod install
+
+    - name: Build
+      run: |
+        xcodebuild -workspace uPic.xcworkspace -scheme uPic -configuration Release clean build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
+
+    - name: Create Release Package
+      run: |
+        mkdir -p build
+        cp -r ./build/Release/uPic.app ./build/uPic.app
+        cd build
+        zip -r uPic.zip uPic.app
+
+    - name: Upload Release Asset
+      uses: actions/upload-artifact@v2
+      with:
+        name: uPic
+        path: build/uPic.zip
